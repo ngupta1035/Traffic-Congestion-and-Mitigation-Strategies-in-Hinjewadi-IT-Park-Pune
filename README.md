@@ -14,6 +14,3 @@ This project presents an **AI-based traffic congestion detection system** that u
 - Visualize traffic conditions through a dashboard  
 - Provide a scalable and cost-effective traffic monitoring solution  
 
----
-
-## ⚙️ System Architecture
