@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrafficIQ — {% if mode == 'signup' %}Create Account{% else %}Sign In{% endif %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root[data-theme="dark"] {
+  --bg: #0a0c10; --surface: #111318; --card: #161a22;
+  --border: #1f2530; --text: #e8ecf3; --muted: #5a6478;
+  --accent: #3d8bff; --accent-dim: rgba(61,139,255,.12);
+  --error: #ff5252; --success: #00e676;
+}
+:root[data-theme="light"] {
+  --bg: #f0f2f7; --surface: #fff; --card: #fff;
+  --border: #e0e4ed; --text: #1a1d26; --muted: #8590a6;
+  --accent: #2563eb; --accent-dim: rgba(37,99,235,.08);
+  --error: #ef4444; --success: #16a34a;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-wrap {
+  width: 100%;
+  max-width: 420px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+  justify-content: center;
+}
+.logo-icon {
+  width: 36px; height: 36px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-icon svg { width: 20px; height: 20px; fill: white; }
+.logo-text { font-size: 1.1rem; font-weight: 700; letter-spacing: -.02em; }
+.logo-sub  { font-size: .65rem; color: var(--muted); font-weight: 400; margin-top: 1px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 36px;
+}
+
+.card-header {
+  margin-bottom: 28px;
+}
+.card-header h1 {
+  font-size: 1.4rem; font-weight: 700; letter-spacing: -.025em;
+}
+.card-header p {
+  font-size: .85rem; color: var(--muted); margin-top: 6px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: block;
+  font-size: .8rem; font-weight: 500;
+  margin-bottom: 7px; color: var(--text);
+}
+.form-group input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: .9rem;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.form-group input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: .9rem; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: opacity .15s, transform .1s;
+}
+.btn-primary:hover { opacity: .88; }
+.btn-primary:active { transform: scale(.99); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+.alt-link {
+  text-align: center;
+  margin-top: 20px;
+  font-size: .83rem;
+  color: var(--muted);
+}
+.alt-link a { color: var(--accent); text-decoration: none; font-weight: 500; }
+
+.error-box {
+  background: rgba(255,82,82,.1);
+  border: 1px solid rgba(255,82,82,.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: .82rem;
+  color: var(--error);
+  margin-bottom: 16px;
+  display: none;
+}
+.error-box.show { display: block; }
+
+.theme-toggle {
+  position: fixed;
+  top: 20px; right: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 1rem;
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+
+<div class="auth-wrap">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">TrafficIQ</div>
+      <div class="logo-sub">Congestion Analytics</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      {% if mode == 'signup' %}
+        <h1>Create your account</h1>
+        <p>Start analysing traffic congestion in minutes.</p>
+      {% else %}
+        <h1>Welcome back</h1>
+        <p>Sign in to your TrafficIQ dashboard.</p>
+      {% endif %}
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+
+    {% if mode == 'signup' %}
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="e.g. johndoe" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password">
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input type="password" id="confirm" placeholder="Repeat password" autocomplete="new-password">
+    </div>
+    <button class="btn-primary" id="submitBtn" onclick="doSignup()">Create Account</button>
+    <div class="alt-link">Already have an account? <a href="/login">Sign in</a></div>
+
+    {% else %}
+    <div class="form-group">
+      <label>Username or Email</label>
+      <input type="text" id="identifier" placeholder="Username or email" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Your password" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="submitBtn" onclick="doLogin()">Sign In</button>
+    <div class="alt-link">No account? <a href="/signup">Sign up free</a></div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Theme
+(function() {
+  const saved = localStorage.getItem('iq-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateToggle(saved);
+})();
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('iq-theme', next);
+  updateToggle(next);
+}
+function updateToggle(theme) {
+  const btn = document.querySelector('.theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.classList.add('show');
+}
+function clearError() {
+  document.getElementById('errorBox').classList.remove('show');
+}
+
+async function post(url, body) {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Please wait…';
+  clearError();
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(body),
+    });
+    const d = await r.json();
+    if (d.ok) { window.location = d.redirect; }
+    else { showError((d.errors || ['An error occurred.']).join(' ')); }
+  } catch(e) { showError('Network error. Please try again.'); }
+  finally { btn.disabled = false; btn.textContent = btn.dataset.label; }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('submitBtn');
+  btn.dataset.label = btn.textContent;
+
+  // Allow Enter key
+  document.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') btn.click();
+    });
+  });
+});
+
+function doSignup() {
+  const username = document.getElementById('username').value.trim();
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const confirm  = document.getElementById('confirm').value;
+  if (!username || !email || !password || !confirm) { showError('Please fill in all fields.'); return; }
+  post('/signup', { username, email, password, confirm });
+}
+
+function doLogin() {
+  const identifier = document.getElementById('identifier').value.trim();
+  const password   = document.getElementById('password').value;
+  if (!identifier || !password) { showError('Please fill in all fields.'); return; }
+  post('/login', { identifier, password });
+}
+</script>
+</body>
+</html>

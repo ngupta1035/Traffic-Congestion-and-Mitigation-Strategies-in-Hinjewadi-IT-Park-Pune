@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrafficIQ — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Tokens ─────────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --sans: 'Inter', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+/* Dark theme (default) */
+[data-theme="dark"] {
+  --bg:       #0a0c10;
+  --surface:  #111318;
+  --card:     #161a22;
+  --card2:    #1b2030;
+  --border:   #1f2530;
+  --border2:  #2a3040;
+  --text:     #e8ecf3;
+  --text2:    #b0bac8;
+  --muted:    #5a6478;
+  --accent:   #3d8bff;
+  --accent2:  #00e5ff;
+  --accent-d: rgba(61,139,255,.12);
+  --shadow:   0 4px 24px rgba(0,0,0,.4);
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --bg:       #f0f2f7;
+  --surface:  #ffffff;
+  --card:     #ffffff;
+  --card2:    #f7f8fb;
+  --border:   #e0e4ed;
+  --border2:  #d0d5e0;
+  --text:     #1a1d26;
+  --text2:    #4b5568;
+  --muted:    #8590a6;
+  --accent:   #2563eb;
+  --accent2:  #0891b2;
+  --accent-d: rgba(37,99,235,.08);
+  --shadow:   0 4px 24px rgba(0,0,0,.08);
+}
+
+/* System theme follows OS preference */
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    --bg:#f0f2f7; --surface:#ffffff; --card:#ffffff; --card2:#f7f8fb;
+    --border:#e0e4ed; --border2:#d0d5e0; --text:#1a1d26; --text2:#4b5568;
+    --muted:#8590a6; --accent:#2563eb; --accent2:#0891b2;
+    --accent-d:rgba(37,99,235,.08); --shadow:0 4px 24px rgba(0,0,0,.08);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    --bg:#0a0c10; --surface:#111318; --card:#161a22; --card2:#1b2030;
+    --border:#1f2530; --border2:#2a3040; --text:#e8ecf3; --text2:#b0bac8;
+    --muted:#5a6478; --accent:#3d8bff; --accent2:#00e5ff;
+    --accent-d:rgba(61,139,255,.12); --shadow:0 4px 24px rgba(0,0,0,.4);
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background .25s, color .25s;
+}
+
+/* ── Nav ─────────────────────────────────────────────────────────────────── */
+nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 28px;
+  height: 58px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 200;
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+}
+
+.logo { display:flex; align-items:center; gap:9px; text-decoration:none; }
+.logo-icon {
+  width:30px; height:30px; background:var(--accent); border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+}
+.logo-icon svg { width:16px; height:16px; fill:white; }
+.logo-text { font-size:.95rem; font-weight:700; color:var(--text); letter-spacing:-.02em; }
+
+.nav-tabs {
+  display:flex; gap:2px; margin-left:16px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:8px; padding:3px;
+}
+.nav-tab {
+  padding:5px 14px; border-radius:6px; font-size:.8rem; font-weight:500;
+  cursor:pointer; color:var(--muted); border:none; background:none;
+  font-family:inherit; transition:all .15s; white-space:nowrap;
+}
+.nav-tab.active { background:var(--accent); color:#fff; }
+
+.nav-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.user-chip {
+  font-size:.78rem; color:var(--muted);
+  background:var(--card); border:1px solid var(--border);
+  padding:4px 12px; border-radius:20px;
+}
+.user-chip strong { color:var(--text); }
+
+.theme-btn {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:8px; padding:5px 10px; cursor:pointer;
+  font-size:.75rem; color:var(--muted); font-family:inherit;
+  display:flex; align-items:center; gap:6px;
+}
+.logout-btn {
+  background:none; border:1px solid var(--border); border-radius:8px;
+  padding:5px 12px; cursor:pointer; font-size:.78rem;
+  color:var(--muted); font-family:inherit; text-decoration:none;
+  transition:border-color .15s, color .15s;
+}
+.logout-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ── Main Layout ──────────────────────────────────────────────────────────── */
+main { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
+
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── Upload Panel ────────────────────────────────────────────────────────── */
+.upload-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+@media (max-width:720px) { .upload-grid { grid-template-columns:1fr; } }
+
+.drop-zone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 44px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  background: var(--card);
+  grid-column: 1 / -1;
+}
+.drop-zone.drag-over { border-color:var(--accent); background:var(--accent-d); }
+.drop-zone-icon { font-size: 2.4rem; margin-bottom: 14px; }
+.drop-zone h3 { font-size:1rem; font-weight:600; margin-bottom:6px; }
+.drop-zone p { font-size:.82rem; color:var(--muted); }
+.drop-zone input { display:none; }
+
+.upload-options {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:22px;
+}
+.upload-options h4 { font-size:.85rem; font-weight:600; margin-bottom:14px; }
+
+.form-row { margin-bottom: 14px; }
+.form-row label { display:block; font-size:.78rem; color:var(--muted); margin-bottom:6px; }
+.form-row input, .form-row select {
+  width:100%;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:9px 12px;
+  font-size:.85rem; color:var(--text); font-family:inherit; outline:none;
+  transition:border-color .15s;
+}
+.form-row input:focus, .form-row select:focus { border-color:var(--accent); }
+.form-row select { cursor:pointer; }
+[data-theme="dark"] .form-row select { color-scheme: dark; }
+
+.btn { 
+  padding:9px 20px; border-radius:var(--radius-sm); font-size:.85rem;
+  font-weight:600; font-family:inherit; cursor:pointer; border:none;
+  transition:opacity .15s, transform .1s; display:inline-flex;
+  align-items:center; gap:7px;
+}
+.btn:hover { opacity:.88; }
+.btn:active { transform:scale(.98); }
+.btn:disabled { opacity:.45; cursor:not-allowed; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-outline { background:none; border:1px solid var(--border2); color:var(--text2); }
+.btn-outline:hover { border-color:var(--accent); color:var(--accent); opacity:1; }
+.btn-danger { background:#ff5252; color:#fff; }
+.btn-sm { padding:6px 14px; font-size:.78rem; }
+
+.file-chips {
+  display:flex; flex-wrap:wrap; gap:8px;
+  margin-top:12px; min-height:0;
+}
+.file-chip {
+  background:var(--card2); border:1px solid var(--border);
+  border-radius:20px; padding:4px 12px;
+  font-size:.75rem; color:var(--text2);
+  display:flex; align-items:center; gap:7px;
+}
+.file-chip button {
+  background:none; border:none; color:var(--muted);
+  cursor:pointer; font-size:.9rem; padding:0; line-height:1;
+}
+.file-chip button:hover { color:#ff5252; }
+
+/* ── Queue / Jobs ─────────────────────────────────────────────────────────── */
+.queue-box {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:20px; grid-column:1/-1;
+}
+.queue-box h4 { font-size:.85rem; font-weight:600; margin-bottom:14px; }
+.queue-item {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 0; border-bottom:1px solid var(--border);
+}
+.queue-item:last-child { border-bottom:none; }
+.q-filename { flex:1; font-size:.83rem; font-family:var(--mono); color:var(--text2); }
+.q-status {
+  font-size:.72rem; font-weight:600; padding:3px 10px; border-radius:20px;
+  letter-spacing:.03em; text-transform:uppercase;
+}
+.q-status.pending  { background:rgba(255,234,0,.1);  color:#ffea00; }
+.q-status.running  { background:rgba(61,139,255,.12); color:var(--accent); }
+.q-status.done     { background:rgba(0,230,118,.1);   color:#00e676; }
+.q-status.error    { background:rgba(255,82,82,.1);   color:#ff5252; }
+.q-action { font-size:.8rem; }
+
+/* ── Results Section ─────────────────────────────────────────────────────── */
+.result-placeholder {
+  text-align:center; padding:60px 24px;
+  color:var(--muted); font-size:.88rem;
+}
+.result-placeholder .icon { font-size:2.5rem; margin-bottom:12px; }
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px; margin-bottom: 22px;
+}
+.kpi {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:18px 16px;
+}
+.kpi-label { font-size:.72rem; color:var(--muted); font-weight:500; margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; }
+.kpi-value { font-size:1.6rem; font-weight:700; font-family:var(--mono); }
+.kpi-sub   { font-size:.72rem; color:var(--muted); margin-top:3px; }
+
+.charts-grid {
+  display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:20px;
+}
+@media (max-width:760px) { .charts-grid { grid-template-columns:1fr; } }
+
+.chart-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:20px;
+}
+.chart-card h4 {
+  font-size:.82rem; font-weight:600; color:var(--text2);
+  margin-bottom:16px; text-transform:uppercase; letter-spacing:.05em;
+}
+.chart-wrap { position:relative; }
+
+.strategies-box {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:20px; margin-bottom:20px;
+}
+.strategies-box h4 {
+  font-size:.82rem; font-weight:600; color:var(--text2);
+  margin-bottom:14px; text-transform:uppercase; letter-spacing:.05em;
+}
+.strategy-item {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:10px 0; border-bottom:1px solid var(--border);
+  font-size:.85rem;
+}
+.strategy-item:last-child { border-bottom:none; }
+.strategy-num {
+  font-family:var(--mono); font-size:.7rem; color:var(--accent);
+  background:var(--accent-d); border-radius:4px;
+  padding:2px 7px; flex-shrink:0; margin-top:1px;
+}
+
+.level-badge {
+  display:inline-block; padding:4px 14px; border-radius:20px;
+  font-size:.8rem; font-weight:700; letter-spacing:.05em;
+}
+
+/* ── History Table ────────────────────────────────────────────────────────── */
+.history-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px;
+}
+.history-header h3 { font-size:1rem; font-weight:600; }
+
+.table-wrap {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); overflow:hidden;
+}
+table { width:100%; border-collapse:collapse; font-size:.83rem; }
+th {
+  padding:11px 16px; text-align:left;
+  font-size:.72rem; font-weight:600; text-transform:uppercase;
+  letter-spacing:.05em; color:var(--muted);
+  background:var(--card2); border-bottom:1px solid var(--border);
+}
+td {
+  padding:12px 16px; border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--accent-d); }
+
+.tag-chip {
+  font-size:.7rem; padding:2px 9px; border-radius:10px; font-weight:600;
+}
+.tag-before { background:rgba(255,110,0,.15); color:#ff8c00; }
+.tag-after  { background:rgba(0,230,118,.1);  color:#00e676; }
+
+/* ── Comparison ───────────────────────────────────────────────────────────── */
+.compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width:640px) { .compare-grid { grid-template-columns:1fr; } }
+
+.compare-select-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:22px;
+}
+.compare-select-card h4 { font-size:.85rem; font-weight:600; margin-bottom:14px; }
+
+.delta-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+  margin:20px 0;
+}
+@media (max-width:540px) { .delta-grid { grid-template-columns:1fr; } }
+
+.delta-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:18px; text-align:center;
+}
+.delta-value {
+  font-size:1.8rem; font-weight:700; font-family:var(--mono);
+}
+.delta-value.positive { color:#00e676; }
+.delta-value.negative { color:#ff5252; }
+.delta-label { font-size:.75rem; color:var(--muted); margin-top:5px; }
+
+.compare-charts-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:16px;
+}
+@media (max-width:760px) { .compare-charts-grid { grid-template-columns:1fr; } }
+
+/* ── Misc ─────────────────────────────────────────────────────────────────── */
+.section-title {
+  font-size:1.1rem; font-weight:700; letter-spacing:-.02em;
+  margin-bottom:20px;
+}
+.empty-state {
+  text-align:center; padding:50px 20px;
+  color:var(--muted); font-size:.85rem;
+}
+.empty-state .icon { font-size:2.2rem; margin-bottom:10px; }
+
+.toast-wrap {
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  display:flex; flex-direction:column; gap:8px; pointer-events:none;
+}
+.toast {
+  background:var(--card2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:12px 18px;
+  font-size:.82rem; box-shadow:var(--shadow);
+  animation: slideIn .25s ease; pointer-events:auto;
+  max-width:300px;
+}
+.toast.success { border-color:rgba(0,230,118,.4); color:#00e676; }
+.toast.error   { border-color:rgba(255,82,82,.4);  color:#ff5252; }
+@keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.spinner {
+  display:inline-block; width:14px; height:14px;
+  border:2px solid rgba(255,255,255,.3); border-top-color:#fff;
+  border-radius:50%; animation:spin .7s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.period-table { width:100%; border-collapse:collapse; font-size:.82rem; margin-top:8px; }
+.period-table th, .period-table td { padding:8px 12px; border-bottom:1px solid var(--border); }
+.period-table th { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+.period-table tr:last-child td { border-bottom:none; }
+
+.meta-row { display:flex; flex-wrap:wrap; gap:14px; margin-bottom:20px; }
+.meta-pill {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:20px; padding:5px 14px;
+  font-size:.75rem; font-family:var(--mono); color:var(--text2);
+}
+.meta-pill span { color:var(--muted); margin-right:5px; }
+
+.result-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:20px; flex-wrap:wrap; gap:12px;
+}
+.result-title { font-size:1rem; font-weight:700; }
+.result-actions { display:flex; gap:8px; }
+</style>
+</head>
+<body>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Nav -->
+<nav>
+  <a class="logo" href="/">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+    </div>
+    <span class="logo-text">TrafficIQ</span>
+  </a>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('upload')">Upload</button>
+    <button class="nav-tab" onclick="showTab('results')">Results</button>
+    <button class="nav-tab" onclick="showTab('history'); loadHistory()">History</button>
+    <button class="nav-tab" onclick="showTab('compare'); loadCompareOptions()">Compare</button>
+  </div>
+
+  <div class="nav-right">
+    <div class="user-chip">Hello, <strong>{{ user.username }}</strong></div>
+    <div class="theme-btn" onclick="cycleTheme()">
+      <span id="themeIcon">🌙</span>
+      <span id="themeLabel">Dark</span>
+    </div>
+    <a class="logout-btn" href="/logout">Logout</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ── Tab: Upload ─────────────────────────────────────────────────────── -->
+<div class="tab-pane active" id="tab-upload">
+  <div class="section-title">Analyse Traffic Video</div>
+  <div class="upload-grid">
+
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="drop-zone-icon">🎬</div>
+      <h3>Drop videos here or click to browse</h3>
+      <p>Supports MP4, AVI, MOV, MKV, WEBM &nbsp;·&nbsp; Max 500 MB per file &nbsp;·&nbsp; Multiple files OK</p>
+      <input type="file" id="fileInput" multiple accept="video/*">
+    </div>
+
+    <div class="upload-options">
+      <h4>Analysis Settings</h4>
+      <div class="form-row">
+        <label>Label / Location name</label>
+        <input type="text" id="uploadLabel" placeholder="e.g. Main St Junction — Monday">
+      </div>
+      <div class="form-row">
+        <label>Mitigation tag</label>
+        <select id="mitigationTag">
+          <option value="before">Before mitigation</option>
+          <option value="after">After mitigation</option>
+        </select>
+      </div>
+      <div class="file-chips" id="fileChips"></div>
+      <button class="btn btn-primary" id="analyseBtn" onclick="startUpload()" style="margin-top:14px;width:100%">
+        Analyse Videos
+      </button>
+    </div>
+
+    <div class="queue-box" id="queueBox" style="display:none">
+      <h4>Processing Queue</h4>
+      <div id="queueItems"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Tab: Results ────────────────────────────────────────────────────── -->
+<div class="tab-pane" id="tab-results">
+  <div id="resultsContent">
+    <div class="result-placeholder">
+      <div class="icon">📊</div>
+      <p>No analysis loaded. Upload a video or pick one from <strong>History</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Tab: History ────────────────────────────────────────────────────── -->
+<div class="tab-pane" id="tab-history">
+  <div class="history-header">
+    <h3>Analysis History</h3>
+    <button class="btn btn-outline btn-sm" onclick="loadHistory()">↻ Refresh</button>
+  </div>
+  <div id="historyContent">
+    <div class="empty-state"><div class="icon">🗂</div><p>Loading…</p></div>
+  </div>
+</div>
+
+<!-- ── Tab: Compare ────────────────────────────────────────────────────── -->
+<div class="tab-pane" id="tab-compare">
+  <div class="section-title">Before / After Comparison</div>
+  <div class="compare-grid" style="margin-bottom:16px">
+    <div class="compare-select-card">
+      <h4>📍 Before Mitigation</h4>
+      <div class="form-row">
+        <label>Select analysis</label>
+        <select id="beforeSelect"><option value="">— choose —</option></select>
+      </div>
+    </div>
+    <div class="compare-select-card">
+      <h4>✅ After Mitigation</h4>
+      <div class="form-row">
+        <label>Select analysis</label>
+        <select id="afterSelect"><option value="">— choose —</option></select>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="runCompare()">Compare Results</button>
+  <div id="compareResults" style="margin-top:24px"></div>
+</div>
+
+</main>
+
+<script>
+/* ── Theme ─────────────────────────────────────────────────────────────── */
+const THEMES = ['dark', 'light', 'system'];
+const THEME_LABELS = { dark:'Dark', light:'Light', system:'System' };
+const THEME_ICONS  = { dark:'🌙', light:'☀️', system:'💻' };
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('iq-theme', t);
+  document.getElementById('themeIcon').textContent  = THEME_ICONS[t];
+  document.getElementById('themeLabel').textContent = THEME_LABELS[t];
+}
+function cycleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem('iq-theme') || 'dark');
+
+/* ── Tabs ──────────────────────────────────────────────────────────────── */
+function showTab(id) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  const tabs = ['upload','results','history','compare'];
+  document.querySelectorAll('.nav-tab')[tabs.indexOf(id)]?.classList.add('active');
+}
+
+/* ── Toast ─────────────────────────────────────────────────────────────── */
+function toast(msg, type='info', dur=3500) {
+  const w = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  w.appendChild(t);
+  setTimeout(() => t.remove(), dur);
+}
+
+/* ── Upload ────────────────────────────────────────────────────────────── */
+let selectedFiles = [];
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  addFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
+
+function addFiles(files) {
+  files.forEach(f => {
+    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size))
+      selectedFiles.push(f);
+  });
+  renderChips();
+}
+
+function removeFile(idx) {
+  selectedFiles.splice(idx, 1);
+  renderChips();
+}
+
+function renderChips() {
+  const c = document.getElementById('fileChips');
+  c.innerHTML = selectedFiles.map((f,i) => `
+    <div class="file-chip">
+      🎬 ${f.name.length > 30 ? f.name.slice(0,28)+'…' : f.name}
+      <button onclick="removeFile(${i})">✕</button>
+    </div>`).join('');
+}
+
+async function startUpload() {
+  if (!selectedFiles.length) { toast('Please select at least one video.', 'error'); return; }
+  const btn = document.getElementById('analyseBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Uploading…';
+
+  const fd = new FormData();
+  selectedFiles.forEach(f => fd.append('videos', f));
+  fd.append('label', document.getElementById('uploadLabel').value.trim());
+  fd.append('mitigation_tag', document.getElementById('mitigationTag').value);
+
+  try {
+    const r = await fetch('/upload', { method:'POST', body:fd });
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || 'Upload failed');
+    selectedFiles = [];
+    renderChips();
+    toast(`${d.jobs.length} video(s) queued for analysis.`, 'success');
+    showQueue(d.jobs);
+  } catch(e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Analyse Videos';
+  }
+}
+
+/* ── Queue polling ─────────────────────────────────────────────────────── */
+const queueJobs = {};   // job_id -> {status, el}
+
+function showQueue(jobs) {
+  const box  = document.getElementById('queueBox');
+  const cont = document.getElementById('queueItems');
+  box.style.display = 'block';
+
+  jobs.forEach(j => {
+    if (queueJobs[j.job_id]) return;
+    const el = document.createElement('div');
+    el.className = 'queue-item';
+    el.id = 'qi-' + j.job_id;
+    el.innerHTML = `
+      <div class="q-filename">${j.filename}</div>
+      <span class="q-status pending" id="qs-${j.job_id}">Pending</span>
+      <div class="q-action" id="qa-${j.job_id}"></div>`;
+    cont.appendChild(el);
+    queueJobs[j.job_id] = { status:'pending' };
+    pollJob(j.job_id);
+  });
+}
+
+function pollJob(jobId, interval=2500) {
+  const timer = setInterval(async () => {
+    try {
+      const r = await fetch('/status/' + jobId);
+      const d = await r.json();
+      const badge = document.getElementById('qs-' + jobId);
+      const action= document.getElementById('qa-' + jobId);
+      if (badge) {
+        badge.className = 'q-status ' + d.status;
+        badge.textContent = d.status.charAt(0).toUpperCase() + d.status.slice(1);
+      }
+      if (d.status === 'done') {
+        clearInterval(timer);
+        if (action) action.innerHTML = `<button class="btn btn-outline btn-sm" onclick="loadResult('${jobId}')">View →</button>`;
+        toast(`✅ "${d.label}" analysis complete!`, 'success', 5000);
+      } else if (d.status === 'error') {
+        clearInterval(timer);
+        if (action) action.innerHTML = `<span style="font-size:.72rem;color:#ff5252">${d.error || 'Error'}</span>`;
+      }
+    } catch(_) {}
+  }, interval);
+}
+
+/* ── Load & Render Result ─────────────────────────────────────────────── */
+const chartInstances = {};
+
+function destroyChart(id) {
+  if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
+}
+
+async function loadResult(jobId) {
+  showTab('results');
+  const cont = document.getElementById('resultsContent');
+  cont.innerHTML = '<div class="result-placeholder"><div class="icon">⏳</div><p>Loading result…</p></div>';
+
+  const r = await fetch('/result/' + jobId);
+  const d = await r.json();
+  if (d.status !== 'done') {
+    cont.innerHTML = `<div class="result-placeholder"><div class="icon">⚠️</div><p>${d.error || 'Not ready yet.'}</p></div>`;
+    return;
+  }
+  renderResult(d, 'resultsContent');
+}
+
+function renderResult(d, containerId) {
+  const s   = d.summary;
+  const m   = d.meta;
+  const ts  = d.timeseries;
+  const cont = document.getElementById(containerId);
+
+  const levelColor = d.score_colors[s.dominant] || '#888';
+
+  cont.innerHTML = `
+    <div class="result-header">
+      <div>
+        <div class="result-title">${d.label || d.filename}</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:3px">${d.filename} · ${new Date(d.created_at).toLocaleString()}</div>
+      </div>
+      <div class="result-actions">
+        <a class="btn btn-outline btn-sm" href="/download/${d.job_id}">⬇ CSV</a>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <div class="meta-pill"><span>Resolution</span>${m.width}×${m.height}</div>
+      <div class="meta-pill"><span>FPS</span>${m.fps}</div>
+      <div class="meta-pill"><span>Duration</span>${m.duration_sec}s</div>
+      <div class="meta-pill"><span>Frames</span>${m.total_frames}</div>
+      <div class="meta-pill"><span>Tag</span>${d.mitigation_tag}</div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Dominant Level</div>
+        <div class="kpi-value" style="font-size:1.1rem">
+          <span class="level-badge" style="background:${levelColor}20;color:${levelColor}">${s.dominant}</span>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Avg Congestion Score</div>
+        <div class="kpi-value" style="color:${levelColor}">${s.avg_score}</div>
+        <div class="kpi-sub">out of 100</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Avg Vehicles/Frame</div>
+        <div class="kpi-value">${s.avg_vehicles}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Peak Vehicles</div>
+        <div class="kpi-value">${s.peak_vehicles}</div>
+        <div class="kpi-sub">at ${s.peak_time_sec}s</div>
+      </div>
+      ${Object.entries(s.vehicle_totals).map(([k,v])=>`
+      <div class="kpi">
+        <div class="kpi-label">${k}</div>
+        <div class="kpi-value">${v.toLocaleString()}</div>
+      </div>`).join('')}
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h4>Congestion Score over Time</h4>
+        <div class="chart-wrap"><canvas id="chart-ts-${d.job_id}" height="180"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Level Distribution</h4>
+        <div class="chart-wrap"><canvas id="chart-dist-${d.job_id}" height="180"></canvas></div>
+      </div>
+    </div>
+
+    <div class="charts-grid" style="grid-template-columns:1fr 1fr">
+      <div class="chart-card">
+        <h4>Vehicle Composition</h4>
+        <div class="chart-wrap"><canvas id="chart-comp-${d.job_id}" height="200"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Congestion by Time Period</h4>
+        <table class="period-table">
+          <thead><tr><th>Period</th><th>Avg Score</th><th>Avg Vehicles</th><th>Peak Level</th></tr></thead>
+          <tbody>${(d.periods||[]).map(p=>`
+            <tr>
+              <td>${p.time_period}</td>
+              <td>${p.avg_score?.toFixed(1)}</td>
+              <td>${p.avg_v?.toFixed(1)}</td>
+              <td><span class="level-badge" style="font-size:.68rem;background:${(d.score_colors||{})[p.peak]||'#888'}20;color:${(d.score_colors||{})[p.peak]||'#888'}">${p.peak}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="strategies-box">
+      <h4>Recommended Mitigation Strategies — ${s.dominant}</h4>
+      ${(s.strategies||[]).map((st,i)=>`
+      <div class="strategy-item">
+        <span class="strategy-num">0${i+1}</span>
+        <span>${st}</span>
+      </div>`).join('')}
+    </div>
+  `;
+
+  // Build charts
+  requestAnimationFrame(() => {
+    const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+
+    // Timeseries
+    destroyChart('ts-'+d.job_id);
+    chartInstances['ts-'+d.job_id] = new Chart(
+      document.getElementById('chart-ts-'+d.job_id), {
+        type:'line',
+        data:{
+          labels: ts.labels,
+          datasets:[{
+            label:'Score', data:ts.scores,
+            borderColor:levelColor, backgroundColor:levelColor+'22',
+            fill:true, tension:.3, pointRadius:0,
+          },{
+            label:'Vehicles', data:ts.vehicles,
+            borderColor:'#3d8bff', backgroundColor:'transparent',
+            fill:false, tension:.3, pointRadius:0, yAxisID:'y2',
+          }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{ labels:{ color:'#b0bac8', boxWidth:12 } } },
+          scales:{
+            x:{ ticks:{ color:'#5a6478', maxTicksLimit:8 }, grid:{ color:gridColor } },
+            y:{ ticks:{ color:'#5a6478' }, grid:{ color:gridColor }, min:0, max:100 },
+            y2:{ position:'right', ticks:{ color:'#5a6478' }, grid:{ display:false } },
+          }
+        }
+      });
+
+    // Distribution doughnut
+    destroyChart('dist-'+d.job_id);
+    chartInstances['dist-'+d.job_id] = new Chart(
+      document.getElementById('chart-dist-'+d.job_id), {
+        type:'doughnut',
+        data:{ labels:d.distribution.labels, datasets:[{ data:d.distribution.values, backgroundColor:d.distribution.colors, borderWidth:0 }] },
+        options:{
+          responsive:true, maintainAspectRatio:false, cutout:'65%',
+          plugins:{ legend:{ position:'right', labels:{ color:'#b0bac8', boxWidth:12, font:{size:11} } } }
+        }
+      });
+
+    // Composition bar
+    destroyChart('comp-'+d.job_id);
+    chartInstances['comp-'+d.job_id] = new Chart(
+      document.getElementById('chart-comp-'+d.job_id), {
+        type:'bar',
+        data:{ labels:d.composition.labels, datasets:[{ data:d.composition.values, backgroundColor:d.composition.colors, borderRadius:5 }] },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{ display:false } },
+          scales:{
+            x:{ ticks:{ color:'#5a6478' }, grid:{ display:false } },
+            y:{ ticks:{ color:'#5a6478' }, grid:{ color:gridColor } },
+          }
+        }
+      });
+  });
+}
+
+/* ── History ────────────────────────────────────────────────────────────── */
+async function loadHistory() {
+  const cont = document.getElementById('historyContent');
+  cont.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><p>Loading…</p></div>';
+  try {
+    const r = await fetch('/history');
+    const data = await r.json();
+    if (!data.length) {
+      cont.innerHTML = '<div class="empty-state"><div class="icon">🗂</div><p>No analyses yet. Upload a video to get started.</p></div>';
+      return;
+    }
+    cont.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Label</th><th>Filename</th><th>Tag</th>
+          <th>Level</th><th>Score</th><th>Date</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          ${data.map(j => `
+          <tr>
+            <td>${j.label || '—'}</td>
+            <td style="font-family:var(--mono);font-size:.78rem">${j.filename}</td>
+            <td><span class="tag-chip tag-${j.mitigation_tag}">${j.mitigation_tag}</span></td>
+            <td>${j.dominant_level
+              ? `<span class="level-badge" style="font-size:.7rem;background:${scoreColor(j.dominant_level)}20;color:${scoreColor(j.dominant_level)}">${j.dominant_level}</span>`
+              : `<span class="q-status ${j.status}">${j.status}</span>`}</td>
+            <td>${j.avg_score != null ? j.avg_score : '—'}</td>
+            <td style="color:var(--muted);font-size:.78rem">${new Date(j.created_at).toLocaleDateString()}</td>
+            <td>
+              <div style="display:flex;gap:6px">
+                ${j.status==='done' ? `<button class="btn btn-outline btn-sm" onclick="loadResult('${j.job_id}')">View</button>` : ''}
+                <button class="btn btn-outline btn-sm" onclick="deleteAnalysis('${j.job_id}', this)" style="color:#ff5252;border-color:#ff525240">Del</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  } catch(e) { cont.innerHTML = '<div class="empty-state"><p>Failed to load history.</p></div>'; }
+}
+
+const SCORE_COLORS_MAP = {
+  'FREE FLOW':'#00e676','LIGHT':'#76ff03','MODERATE':'#ffea00','HEAVY':'#ff6d00','SEVERE':'#d50000'
+};
+function scoreColor(lvl) { return SCORE_COLORS_MAP[lvl] || '#888'; }
+
+async function deleteAnalysis(jobId, btn) {
+  if (!confirm('Delete this analysis?')) return;
+  btn.disabled = true;
+  const r = await fetch('/delete/'+jobId, { method:'DELETE' });
+  if (r.ok) { toast('Deleted.'); loadHistory(); }
+  else { toast('Delete failed.', 'error'); btn.disabled = false; }
+}
+
+/* ── Compare ────────────────────────────────────────────────────────────── */
+async function loadCompareOptions() {
+  const r = await fetch('/history');
+  const data = await r.json();
+  const done = data.filter(j => j.status === 'done');
+
+  ['beforeSelect','afterSelect'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">— choose —</option>' +
+      done.map(j => `<option value="${j.job_id}">${j.label || j.filename} (${j.mitigation_tag})</option>`).join('');
+  });
+}
+
+async function runCompare() {
+  const before = document.getElementById('beforeSelect').value;
+  const after  = document.getElementById('afterSelect').value;
+  if (!before || !after) { toast('Select both analyses.', 'error'); return; }
+  if (before === after)  { toast('Choose two different analyses.', 'error'); return; }
+
+  const cont = document.getElementById('compareResults');
+  cont.innerHTML = '<div class="empty-state"><p>⏳ Loading comparison…</p></div>';
+
+  const r = await fetch('/compare', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ before_id:before, after_id:after }),
+  });
+  const d = await r.json();
+  if (!r.ok) { cont.innerHTML = `<div class="empty-state"><p>Error: ${d.error}</p></div>`; return; }
+
+  const b = d.before, a = d.after, delta = d.delta;
+
+  const improved = delta.improved;
+  const scoreDeltaStr = (delta.score > 0 ? '+' : '') + delta.score;
+  const vehDeltaStr   = (delta.vehicles > 0 ? '+' : '') + delta.vehicles;
+
+  cont.innerHTML = `
+    <div class="delta-grid">
+      <div class="delta-card">
+        <div class="delta-label">Before — Avg Score</div>
+        <div class="delta-value">${b.avg_score}</div>
+        <div class="delta-label" style="margin-top:4px">${b.dominant_level}</div>
+      </div>
+      <div class="delta-card" style="border-color:${improved?'rgba(0,230,118,.35)':'rgba(255,82,82,.35)'}">
+        <div class="delta-label">Score Change</div>
+        <div class="delta-value ${improved?'positive':'negative'}">${scoreDeltaStr}</div>
+        <div class="delta-label" style="margin-top:4px">${improved?'✅ Improved':'⚠ Worsened'}</div>
+      </div>
+      <div class="delta-card">
+        <div class="delta-label">After — Avg Score</div>
+        <div class="delta-value">${a.avg_score}</div>
+        <div class="delta-label" style="margin-top:4px">${a.dominant_level}</div>
+      </div>
+    </div>
+
+    <div class="compare-charts-grid">
+      <div class="chart-card">
+        <h4>Congestion Score — Before vs After</h4>
+        <div class="chart-wrap"><canvas id="cmp-ts" height="200"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Level Distribution Comparison</h4>
+        <div class="chart-wrap"><canvas id="cmp-dist" height="200"></canvas></div>
+      </div>
+    </div>
+
+    <div class="compare-charts-grid" style="margin-top:16px">
+      <div class="chart-card">
+        <h4>Vehicle Count — Before vs After</h4>
+        <div class="chart-wrap"><canvas id="cmp-veh" height="200"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Vehicle Mix Comparison</h4>
+        <div class="chart-wrap"><canvas id="cmp-mix" height="200"></canvas></div>
+      </div>
+    </div>
+  `;
+
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+
+  // Timeseries overlay
+  destroyChart('cmp-ts');
+  chartInstances['cmp-ts'] = new Chart(document.getElementById('cmp-ts'), {
+    type:'line',
+    data:{
+      labels: b.timeseries.labels,
+      datasets:[
+        { label:'Before', data:b.timeseries.scores, borderColor:'#ff6d00', fill:false, tension:.3, pointRadius:0 },
+        { label:'After',  data:a.timeseries.scores, borderColor:'#00e676', fill:false, tension:.3, pointRadius:0 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#b0bac8',boxWidth:12}}},
+      scales:{
+        x:{ticks:{color:'#5a6478',maxTicksLimit:8},grid:{color:gridColor}},
+        y:{ticks:{color:'#5a6478'},grid:{color:gridColor},min:0,max:100},
+      }
+    }
+  });
+
+  // Distribution grouped bar
+  destroyChart('cmp-dist');
+  chartInstances['cmp-dist'] = new Chart(document.getElementById('cmp-dist'), {
+    type:'bar',
+    data:{
+      labels: d.level_order,
+      datasets:[
+        { label:'Before', data:d.level_order.map(l=>b.level_pcts[l]||0), backgroundColor:'rgba(255,110,0,.7)', borderRadius:4 },
+        { label:'After',  data:d.level_order.map(l=>a.level_pcts[l]||0), backgroundColor:'rgba(0,230,118,.7)', borderRadius:4 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#b0bac8',boxWidth:12}}},
+      scales:{
+        x:{ticks:{color:'#5a6478'},grid:{display:false}},
+        y:{ticks:{color:'#5a6478',callback:v=>v+'%'},grid:{color:gridColor},max:100},
+      }
+    }
+  });
+
+  // Vehicle count timeseries
+  destroyChart('cmp-veh');
+  chartInstances['cmp-veh'] = new Chart(document.getElementById('cmp-veh'), {
+    type:'line',
+    data:{
+      labels: b.timeseries.labels,
+      datasets:[
+        { label:'Before', data:b.timeseries.vehicles, borderColor:'#ff6d00', fill:false, tension:.3, pointRadius:0 },
+        { label:'After',  data:a.timeseries.vehicles, borderColor:'#00e676', fill:false, tension:.3, pointRadius:0 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#b0bac8',boxWidth:12}}},
+      scales:{
+        x:{ticks:{color:'#5a6478',maxTicksLimit:8},grid:{color:gridColor}},
+        y:{ticks:{color:'#5a6478'},grid:{color:gridColor}},
+      }
+    }
+  });
+
+  // Vehicle mix comparison
+  const allTypes = Object.keys(b.vehicle_totals);
+  destroyChart('cmp-mix');
+  chartInstances['cmp-mix'] = new Chart(document.getElementById('cmp-mix'), {
+    type:'bar',
+    data:{
+      labels: allTypes,
+      datasets:[
+        { label:'Before', data:allTypes.map(k=>b.vehicle_totals[k]||0), backgroundColor:'rgba(255,110,0,.7)', borderRadius:4 },
+        { label:'After',  data:allTypes.map(k=>a.vehicle_totals[k]||0), backgroundColor:'rgba(0,230,118,.7)', borderRadius:4 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#b0bac8',boxWidth:12}}},
+      scales:{
+        x:{ticks:{color:'#5a6478'},grid:{display:false}},
+        y:{ticks:{color:'#5a6478'},grid:{color:gridColor}},
+      }
+    }
+  });
+}
+
+/* ── Init ─────────────────────────────────────────────────────────────── */
+window.addEventListener('load', () => {
+  // Auto-resume queue for jobs still in progress
+  fetch('/history').then(r=>r.json()).then(data => {
+    const active = data.filter(j => j.status === 'pending' || j.status === 'running');
+    if (active.length) {
+      showQueue(active.map(j => ({ job_id:j.job_id, filename:j.filename })));
+    }
+  });
+});
+</script>
+</body>
+</html>
